@@ -37,7 +37,7 @@ module Devise
 
         # Gets the primary email address of the user.
         def email
-          multi_email.primary_email_record.try(:email)
+          multi_email.primary_email_record.try(:address)
         end
 
         # Sets the default email address of the user.
