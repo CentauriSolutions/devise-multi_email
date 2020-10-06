@@ -63,7 +63,7 @@ module Devise
       module ClassMethods
         def find_first_by_auth_conditions(tainted_conditions, opts = {})
           filtered_conditions = devise_parameter_filter.filter(tainted_conditions.dup)
-          criteria = filtered_conditions.extract!(:email, :unconfirmed_email)
+          criteria = filtered_conditions.extract!(:address, :unconfirmed_email)
 
           if criteria.keys.any?
             conditions = filtered_conditions.to_h.merge(opts).
@@ -78,7 +78,7 @@ module Devise
         end
 
         def find_by_email(email)
-          joins(multi_email_association.name).where(build_conditions email: email).first
+          joins(multi_email_association.name).where(build_conditions address: email).first
         end
 
         def build_conditions(criteria)

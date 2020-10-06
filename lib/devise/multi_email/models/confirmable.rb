@@ -101,6 +101,22 @@ module Devise
 
         module ClassMethods
           delegate :confirm_by_token, :send_confirmation_instructions, to: 'multi_email_association.model_class', allow_nil: false
+
+          def send_confirmation_instructions(attributes={})
+            confirmable = find_by_unconfirmed_email_with_errors(attributes) if reconfirmable
+            unless confirmable.try(:persisted?)
+              if confirmation_keys[0] == :email and attributes.key?("email")
+                confirmable = find_or_initialize_with_errors([:address], {
+                  address: attributes.delete(:email)
+                }, :not_found)
+              else
+                confirmable = find_or_initialize_with_errors(confirmation_keys, attributes, :not_found)
+              end
+            end
+            confirmable.resend_confirmation_instructions if confirmable.persisted?
+            confirmable
+          end
+
         end
       end
     end

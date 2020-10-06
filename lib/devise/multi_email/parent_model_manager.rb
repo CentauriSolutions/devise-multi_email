@@ -15,7 +15,7 @@ module Devise
       def login_email_record
         if @parent_record.current_login_email.present?
           formatted_email = format_email(@parent_record.current_login_email)
-          filtered_emails.find { |item| item.email == formatted_email }
+          filtered_emails.find { |item| item.address == formatted_email }
         end
       end
 
@@ -47,13 +47,13 @@ module Devise
 
       # Use Devise formatting settings for emails
       def format_email(email)
-        @parent_record.class.__send__(:devise_parameter_filter).filter(email: email)[:email]
+        @parent_record.class.__send__(:devise_parameter_filter).filter(address: email)[:address]
       end
 
       def find_or_build_for_email(email)
         formatted_email = format_email(email)
-        record = filtered_emails.find { |item| item.email == formatted_email }
-        record || emails.build(email: formatted_email)
+        record = filtered_emails.find { |item| item.address == formatted_email }
+        record || emails.build(address: formatted_email)
       end
 
       def emails
@@ -78,7 +78,7 @@ module Devise
       # :skip_confirmations option confirms this email record (without saving)
       def set_primary_record_to(record, options = {})
         # Toggle primary flag for all emails
-        filtered_emails.each { |other| other.primary = (other.email == record.email) }
+        filtered_emails.each { |other| other.primary = (other.address == record.address) }
 
         if options[:skip_confirmations]
           record.try(:skip_confirmation!)
