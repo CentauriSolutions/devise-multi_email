@@ -61,19 +61,48 @@ module Devise
       end
 
       module ClassMethods
+        def find_or_initialize_with_errors(required_attributes, attributes, error=:invalid) #:nodoc:
+          attributes.try(:permit!)
+          attributes = attributes.to_h.with_indifferent_access
+                                 .slice(*required_attributes)
+                                 .delete_if { |key, value| value.blank? }
+
+          if attributes.size == required_attributes.size
+            records = find_first_by_auth_conditions(attributes) #and return records
+            if records[0] and !records[0].nil?
+                return records
+            end
+          end
+
+          corrected_attributes = attributes
+          if corrected_attributes.has_key?(:address)
+            corrected_attributes[:email] = corrected_attributes.delete(:address)
+          end
+          resource_with_errors = new(devise_parameter_filter.filter(corrected_attributes)).tap do |record|
+            [:email].each do |key| #required_attributes.each do |key|
+              record.errors.add(key, attributes[key].blank? ? :blank : error)
+            end
+          end
+
+          return resource_with_errors, nil
+        end
+
+
         def find_first_by_auth_conditions(tainted_conditions, opts = {})
           filtered_conditions = devise_parameter_filter.filter(tainted_conditions.dup)
-          criteria = filtered_conditions.extract!(:address, :unconfirmed_email)
+          criteria = filtered_conditions.extract!(:address, :unconfirmed_email, :confirmation_token)
 
           if criteria.keys.any?
             conditions = filtered_conditions.to_h.merge(opts).
-              reverse_merge(build_conditions(criteria))
+              reverse_merge(criteria) #build_conditions(criteria))
 
-            resource = joins(multi_email_association.name).find_by(conditions)
-            resource.current_login_email = criteria.values.first if resource
-            resource
+            true_confirmable_resource = (multi_email_association.name.to_s.classify.constantize).find_by(conditions)
+            primary_resource = true_confirmable_resource.nil? ? nil :
+              true_confirmable_resource.user
+            primary_resource.current_login_email = criteria.values.first if primary_resource
+            return primary_resource, true_confirmable_resource
           else
-            super(tainted_conditions, opts)
+            return nil, nil
           end
         end
 
