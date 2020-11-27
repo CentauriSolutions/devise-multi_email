@@ -290,7 +290,7 @@ module Devise
               confirmation_digest = Devise.token_generator.digest(self, :confirmation_token, confirmation_token)
               confirmables = find_or_initialize_with_error_by(:confirmation_token, confirmation_digest)
             end
-            confirmables[0].confirm({ address: confirmables[1] }) if confirmables[1].persisted?
+            confirmables[0].confirm({ address: confirmables[1] }) if confirmables[1] and confirmables[1].persisted?
             confirmables[0]
           end
 
