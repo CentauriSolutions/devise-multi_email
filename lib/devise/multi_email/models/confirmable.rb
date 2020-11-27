@@ -46,16 +46,19 @@ module Devise
                  :reconfirmation_required?, :pending_reconfirmation?, to: Devise::MultiEmail.primary_email_method_name, allow_nil: true
 
        def initialize(*args, &block)
-          @bypass_confirmation_postpone = false
-          @skip_reconfirmation_in_callback = false
+          @bypass_confirmation_postpone = {}
+          @skip_reconfirmation_in_callback = {}
           @reconfirmation_required = {}
-          @skip_confirmation_notification = false
+          @skip_confirmation_notification = {}
           @raw_confirmation_token = {}
 
           begin
             self.email_addresses.each do |a|
               @reconfirmation_required[a.id] = false
               @raw_confirmation_tokens[a.id] = nil
+              @bypass_confirmation_postpone[a.id] = false
+              @skip_reconfirmation_in_callback[a.id] = false
+              @skip_confirmation_notification[a.id] = false
             end
           rescue
           end
@@ -142,20 +145,33 @@ module Devise
           address.confirmed_at = Time.now.utc
         end
 
+        # Skips sending the confirmation/reconfirmation notification email after_create/after_update. Unlike
+        # #skip_confirmation!, record still requires confirmation.
+        def skip_confirmation_notification!(address)
+          @skip_confirmation_notification[address.id] = true
+        end
+
+
+        # If you don't want reconfirmation to be sent, neither a code
+        # to be generated, call skip_reconfirmation!
+        def skip_reconfirmation!(address)
+          @bypass_confirmation_postpone[address.id] = true
+        end
+
 
         def send_confirmation_instructions(address)
-          unless @raw_confirmation_token
+          unless @raw_confirmation_token[address.id]
             generate_confirmation_token!(address)
           end
 
           opts = pending_reconfirmation?(address) ? { to: address.unconfirmed_email } : { to: address.address }
-          send_devise_notification(:confirmation_instructions, @raw_confirmation_token, opts)
+          send_devise_notification(:confirmation_instructions, @raw_confirmation_token[address.id], opts)
         end
 
         def send_reconfirmation_instructions(address)
           @reconfirmation_required[address.id] = false
 
-          unless @skip_confirmation_notification
+          unless @skip_confirmation_notification[address.id]
             send_confirmation_instructions(address)
           end
         end
@@ -178,9 +194,9 @@ module Devise
         def generate_confirmation_token(address=nil)
           if !address.nil?
             if address.confirmation_token && !confirmation_period_expired?(address)
-              @raw_confirmation_token = address.confirmation_token
+              @raw_confirmation_token[address.id] = address.confirmation_token
             else
-              address.confirmation_token = @raw_confirmation_token = Devise.friendly_token
+              address.confirmation_token = @raw_confirmation_token[address.id] = Devise.friendly_token
               address.confirmation_sent_at = Time.now.utc
             end
           end
