@@ -90,16 +90,23 @@ module Devise
 
         def find_first_by_auth_conditions(tainted_conditions, opts = {})
           filtered_conditions = devise_parameter_filter.filter(tainted_conditions.dup)
-          criteria = filtered_conditions.extract!(:address, :unconfirmed_email, :confirmation_token)
+          criteria = filtered_conditions.extract!(:address, :unconfirmed_email, :confirmation_token, :reset_password_token)
 
           if criteria.keys.any?
             conditions = filtered_conditions.to_h.merge(opts).
               reverse_merge(criteria) #build_conditions(criteria))
 
-            true_confirmable_resource = (multi_email_association.name.to_s.classify.constantize).find_by(conditions)
-            primary_resource = true_confirmable_resource.nil? ? nil :
-              true_confirmable_resource.user
-            primary_resource.current_login_email = criteria.values.first if primary_resource
+            # Make this work both ways because we may be looking for the user
+            #    account versus the email (like when we want to reset a pass.
+            if (multi_email_association.name.to_s.classify).include? filtered_conditions.to_h.merge(opts).reverse_merge(criteria).first[0]
+              true_confirmable_resource = (multi_email_association.name.to_s.classify.constantize).find_by(conditions)
+              primary_resource = true_confirmable_resource.nil? ? nil :
+                true_confirmable_resource.user
+              primary_resource.current_login_email = criteria.values.first if primary_resource
+            else
+              true_confirmable_resource = (Devise.default_scope.to_s.classify.constantize).find_by(conditions)
+              primary_resource = true_confirmable_resource
+            end
             return primary_resource, true_confirmable_resource
           else
             return nil, nil

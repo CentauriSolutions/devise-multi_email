@@ -48,6 +48,28 @@ module Devise
             recoverables[0]
           end
 
+          def reset_password_by_token(attributes={})
+            original_token       = attributes[:reset_password_token]
+            reset_password_token = Devise.token_generator.digest(self, :reset_password_token, original_token)
+
+            recoverables = find_or_initialize_with_errors(
+                [ :reset_password_token ],
+                {
+                  reset_password_token: reset_password_token
+                })
+
+            if recoverables[0].persisted?
+              if recoverables[0].reset_password_period_valid?
+                recoverables[0].reset_password(attributes[:password], attributes[:password_confirmation])
+              else
+                recoverables[0].errors.add(:reset_password_token, :expired)
+              end
+            end
+
+            recoverables[0].reset_password_token = original_token if recoverables[0].reset_password_token.present?
+            recoverables[0]
+          end
+
         end
       end
     end
