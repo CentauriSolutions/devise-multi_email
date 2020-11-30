@@ -46,6 +46,8 @@ module Devise
                  :reconfirmation_required?, :pending_reconfirmation?, to: Devise::MultiEmail.primary_email_method_name, allow_nil: true
 
        def initialize(*args, &block)
+          super
+
           @bypass_confirmation_postpone = {}
           @skip_reconfirmation_in_callback = {}
           @reconfirmation_required = {}
@@ -62,8 +64,6 @@ module Devise
             end
           rescue
           end
-
-          super
         end
 
 
@@ -148,6 +148,9 @@ module Devise
         # Skips sending the confirmation/reconfirmation notification email after_create/after_update. Unlike
         # #skip_confirmation!, record still requires confirmation.
         def skip_confirmation_notification!(address)
+          if @skip_confirmation_notification.nil?
+            initialize()
+          end
           @skip_confirmation_notification[address.id] = true
         end
 
@@ -155,6 +158,9 @@ module Devise
         # If you don't want reconfirmation to be sent, neither a code
         # to be generated, call skip_reconfirmation!
         def skip_reconfirmation!(address)
+          if @bypass_confirmation_postpone.nil?
+            initialize()
+          end
           @bypass_confirmation_postpone[address.id] = true
         end
 
@@ -169,6 +175,9 @@ module Devise
         end
 
         def send_reconfirmation_instructions(address)
+          if @reconfirmation_required.nil?
+            initialize()
+          end
           @reconfirmation_required[address.id] = false
 
           unless @skip_confirmation_notification[address.id]
