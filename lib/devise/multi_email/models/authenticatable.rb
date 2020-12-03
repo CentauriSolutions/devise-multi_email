@@ -98,7 +98,7 @@ module Devise
 
             # Make this work both ways because we may be looking for the user
             #    account versus the email (like when we want to reset a pass.
-            if (multi_email_association.name.to_s.classify).include? filtered_conditions.to_h.merge(opts).reverse_merge(criteria).first[0]
+            if (multi_email_association.name.to_s.classify.constantize).column_names.include? filtered_conditions.to_h.merge(opts).reverse_merge(criteria).first[0]
               true_confirmable_resource = (multi_email_association.name.to_s.classify.constantize).find_by(conditions)
               primary_resource = true_confirmable_resource.nil? ? nil :
                 true_confirmable_resource.user

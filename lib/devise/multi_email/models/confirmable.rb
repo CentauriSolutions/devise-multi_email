@@ -166,6 +166,9 @@ module Devise
 
 
         def send_confirmation_instructions(address)
+          if @raw_confirmation_token.nil?
+            initialize()
+          end
           unless @raw_confirmation_token[address.id]
             generate_confirmation_token!(address)
           end
@@ -175,7 +178,7 @@ module Devise
         end
 
         def send_reconfirmation_instructions(address)
-          if @reconfirmation_required.nil?
+          if @reconfirmation_required.nil? or @skip_confirmation_notification.nil?
             initialize()
           end
           @reconfirmation_required[address.id] = false
@@ -292,13 +295,16 @@ module Devise
               end
             end
 
+            # Devise seems to obliterate my confirmables[0] when I resend
+            confirmable_id = confirmables[0].id
+            byebug
             if confirmables and confirmables[0]
               if confirmables[0].persisted?
                 confirmables[0].resend_confirmation_instructions(
                   confirmables[1]
                 ) 
               end
-              confirmables[0]
+              (Devise.default_scope.to_s.classify.constantize).find(confirmable_id)
             end
           end
 
