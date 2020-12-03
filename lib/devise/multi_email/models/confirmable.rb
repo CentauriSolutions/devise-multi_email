@@ -297,7 +297,7 @@ module Devise
 
             # Devise seems to obliterate my confirmables[0] when I resend
             confirmable_id = confirmables[0].id
-            byebug
+
             if confirmables and confirmables[0]
               if confirmables[0].persisted?
                 confirmables[0].resend_confirmation_instructions(
