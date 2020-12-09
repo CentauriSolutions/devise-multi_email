@@ -80,7 +80,7 @@ module Devise
               address.confirmed_at = Time.now.utc
               saved = if pending_reconfirmation?(address)
                 skip_reconfirmation!(address)
-                address.address = unconfirmed_email
+                address.address = address.unconfirmed_email
                 address.unconfirmed_email = nil
 
                 # We need to validate in such cases to enforce e-mail uniqueness
@@ -321,7 +321,13 @@ module Devise
               confirmation_digest = Devise.token_generator.digest(self, :confirmation_token, confirmation_token)
               confirmables = find_or_initialize_with_error_by(:confirmation_token, confirmation_digest)
             end
-            confirmables[0].confirm({ address: confirmables[1] }) if confirmables[1] and confirmables[1].persisted?
+            confirmed = confirmables[0].confirm({ address: confirmables[1] }) if confirmables[1] and confirmables[1].persisted?
+
+            if confirmed
+              confirmables[0].errors.each do |e|
+                confirmables[0].errors.delete(e)
+              end
+            end
             confirmables[0]
           end
 
