@@ -328,6 +328,13 @@ module Devise
                 confirmables[0].errors.delete(e)
               end
             end
+
+            # If we haven't found it, return that.
+            if confirmables.nil? or
+                (confirmables.length == 2 and confirmables[0].nil? )
+              confirmables = [ new ]
+              confirmables[0].errors.add(:confirmation_token, :not_found)
+            end
             confirmables[0]
           end
 
